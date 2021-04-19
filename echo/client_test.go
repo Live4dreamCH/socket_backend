@@ -1,11 +1,11 @@
-package src
+package echo
 
 import (
 	"fmt"
 	"net"
 )
 
-func main0() {
+func Example1() {
 	c, err := net.Dial("tcp4", "hwc.l2d.top:43853")
 	if err != nil {
 		fmt.Println(err)

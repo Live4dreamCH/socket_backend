@@ -1,4 +1,4 @@
-package src
+package echo
 
 import (
 	"fmt"
@@ -22,7 +22,7 @@ func handleConn(c net.Conn) {
 	c.Close()
 }
 
-func main1() {
+func Example2() {
 	l, err := net.Listen("tcp4", "0.0.0.0:43853")
 	if err != nil {
 		fmt.Println("listen error:", err)

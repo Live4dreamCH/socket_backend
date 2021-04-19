@@ -1,4 +1,4 @@
-package main
+package ws
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ func Echo(ws *websocket.Conn) {
 	}
 }
 
-func main() {
+func Example() {
 	h := websocket.Handler(Echo)
 	http.Handle("/wsecho", h)
 
