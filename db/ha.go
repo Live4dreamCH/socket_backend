@@ -25,7 +25,7 @@ func main() {
 	//插入数据
 	stmt, err := db.Prepare(
 		`insert into users (psw, u_name) 
-		values (?, ?)`)
+		values (?, ?);`)
 	checkErr(err)
 
 	res, err := stmt.Exec("fens", "我是谁")
