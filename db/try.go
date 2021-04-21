@@ -1,4 +1,4 @@
-package main
+package db
 
 import (
 	"database/sql"
@@ -14,7 +14,7 @@ func checkErr(err error) {
 	}
 }
 
-func main() {
+func Example() {
 	s, err := os.ReadFile("../pwd/local_mysql.txt")
 	checkErr(err)
 	psw := string(s)
