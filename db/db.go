@@ -23,7 +23,11 @@ func check(err error) {
 var dbp *sql.DB
 
 // 预编译语句
-var u_login *sql.Stmt
+var (
+	u_login  *sql.Stmt
+	u_has_fr *sql.Stmt
+	u_add_fr *sql.Stmt
+)
 
 func init() {
 	s, err := os.ReadFile("../pwd/local_mysql.txt")
@@ -39,6 +43,17 @@ func init() {
 		`select psw, u_name
 		from users
 		where u_id=?;`)
+	check(err)
+
+	u_has_fr, err = dbp.Prepare(
+		`select fr_id
+		from friends
+		where my_id=? and fr_id=?;`)
+	check(err)
+
+	u_add_fr, err = dbp.Prepare(
+		`insert into friends (my_id,fr_id)
+		values (?, ?);`)
 	check(err)
 
 }

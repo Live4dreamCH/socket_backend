@@ -14,5 +14,6 @@ func init() {
 func main() {
 	r := gin.Default()
 	r.POST("/login", login)
+	r.POST("/addfriend", addfriend)
 	r.Run(":43851")
 }

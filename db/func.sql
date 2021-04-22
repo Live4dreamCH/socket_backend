@@ -19,7 +19,7 @@ where m.s_id=? and m.msg_id>? and m.con_id=c.con_id
 -- from users
 -- where u_id=? or u_name=?;
 
--- test friend
+-- has friend
 select fr_id
 from friends
 where my_id=? and fr_id=?;

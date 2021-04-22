@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"sync"
 )
 
@@ -25,14 +26,14 @@ func (s *sID) set(uid int) string {
 	}
 
 	sid := newSID()
-	_, ok := sess.m[sid]
+	_, ok := s.m[sid]
 	for ok {
 		sid = newSID()
-		_, ok = sess.m[sid]
+		_, ok = s.m[sid]
 	}
 	s.l.RUnlock()
 	s.l.Lock()
-	sess.m[sid] = uid
+	s.m[sid] = uid
 	s.l.Unlock()
 	return sid
 }
@@ -41,7 +42,19 @@ func (s *sID) set(uid int) string {
 // 已登录, 返回uid, nil
 // 未登录, 返回0, err
 func (s *sID) get(sid string) (int, error) {
-	return 0, nil
+	s.l.RLock()
+	defer s.l.RUnlock()
+	uid, ok := s.m[sid]
+	if ok {
+		return uid, nil
+	}
+	return 0, errors.New(sid + " not found!\n")
+}
+
+func (s *sID) rm(sid string) {
+	s.l.RLock()
+	defer s.l.RUnlock()
+	delete(s.m, sid)
 }
 
 // 随机生成一个sid
