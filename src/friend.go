@@ -12,12 +12,12 @@ func addfriend(c *gin.Context) {
 	var u db.User
 	var req af
 	if err := c.BindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, gin.H{"res": "NO", "reason": "request json error"})
+		// c.JSON(http.StatusOK, gin.H{"res": "NO", "reason": "request json error"})
 		fmt.Println("addfriend: json bind error:", err)
 	} else {
 		uid, err := sess.get(req.Sid)
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{"res": "NO", "reason": "wrong sessionid"})
+			c.JSON(http.StatusOK, gin.H{"res": "NO", "reason": "wrong sid"})
 		} else {
 			u.Id = uid
 			ok := u.HasFriend(req.Frid)

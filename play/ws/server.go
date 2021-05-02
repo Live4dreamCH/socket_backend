@@ -1,4 +1,4 @@
-package ws
+package main
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ func Echo(ws *websocket.Conn) {
 			fmt.Println("Can't receive")
 			break
 		}
-
+		fmt.Println("Received msg len=", len(reply))
 		msg := "Received:  " + reply
 		if err = websocket.Message.Send(ws, msg); err != nil {
 			fmt.Println("Can't send")
@@ -25,7 +25,7 @@ func Echo(ws *websocket.Conn) {
 	}
 }
 
-func Example() {
+func main() {
 	h := websocket.Handler(Echo)
 	http.Handle("/wsecho", h)
 

@@ -36,31 +36,31 @@ where f.my_id=? and f.fr_id=u.u_id;
 -- rm friend
 
 -- create a conversation
-insert into sessions (s_name, owner)
+insert into convs (s_name, owner)
 values (null, null);
 
-insert into session_members (s_id, mem_id)
+insert into conv_members (s_id, mem_id)
 values (?, ?), (?, ?);
 
 -- create a group
-insert into sessions (s_name, owner)
+insert into convs (s_name, owner)
 values (?, ?);
 
-insert into session_members (s_id, mem_id)
+insert into conv_members (s_id, mem_id)
 values (?, ?);
 
 -- join a group
 -- test
 select sm.s_id
-from session_members sm
+from conv_members sm
 where sm.mem_id=? and sm.s_id=?;
 
-insert into session_members (s_id, mem_id)
+insert into conv_members (s_id, mem_id)
 values (?, ?);
 
--- a session's member
+-- a conv's member
 select sm.mem_id
-from session_members sm
+from conv_members sm
 where sm.s_id=?;
 
 -- add a msg

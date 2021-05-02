@@ -17,7 +17,7 @@ create table if not exists friends(
 	foreign key (fr_id) references users(u_id) on delete cascade
 );
 
-create table if not exists sessions(
+create table if not exists convs(
 	s_id	int			not null	auto_increment,
 	s_name	varchar(31)	null,	-- 当会话是好友间会话，会话名为null
 	owner	int 		null,	-- 当会话是好友间会话，会话所有者为null
@@ -27,11 +27,11 @@ create table if not exists sessions(
 	-- 类似linux对孤儿进程的处理：parent=init
 );
 
-create table if not exists session_members(
+create table if not exists conv_members(
 	s_id	int not null,
 	mem_id	int not null,
 	primary key (s_id, mem_id),
-	foreign key (s_id) references sessions(s_id) on delete cascade,
+	foreign key (s_id) references convs(s_id) on delete cascade,
 	foreign key (mem_id) references users(u_id) on delete cascade
 );
 
@@ -52,15 +52,25 @@ create table if not exists msgs(
 	foreign key (sender) references users(u_id),
 	-- 出于安全因素，删除用户不能删除其已有聊天记录
 	foreign key (con_id) references contents(con_id) on delete cascade,
-	foreign key (s_id) references sessions(s_id) on delete cascade
+	foreign key (s_id) references convs(s_id) on delete cascade
 );
 
--- create table session_msgs(
+create table if not exists fr_notices(
+	u_id	int		not null,
+	fr_id	int 	not null,
+	is_ans	boolean	not null,
+	ans		boolean	null,
+	primary key (u_id, fr_id),
+	foreign key (u_id) references users(u_id) on delete cascade,
+	foreign key (fr_id) references users(u_id) on delete cascade
+)
+
+-- create table conv_msgs(
 -- 	msg_id	int	not null,
 -- 	s_id	int not null,
 -- 	primary key (msg_id),
 -- 	foreign key (msg_id) references msgs(msg_id) on delete cascade,
--- 	foreign key (s_id) references sessions(s_id) on delete cascade
+-- 	foreign key (s_id) references convs(s_id) on delete cascade
 -- );
 
 -- create table msg_contents(
