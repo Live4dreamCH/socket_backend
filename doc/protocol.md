@@ -208,3 +208,22 @@ B在用户操作(同意/拒绝)后, 也向服务器发送http请求, 服务器�
     "msg id": 1
 }
 ``` -->
+
+### p2p通信
+
+服务端需要根据json信息进行sdp转发，并进行异常处理。使用消息ws通道进行信息通信和信息接受。
+
+#### 发送sdp
+
+```json
+{
+    // 操作符为connect/connect response
+    "op":"connect",
+    // 发送者的uid
+    "from":10086,
+    // 转发对象的uid
+    "to":233,
+    // sdp内容
+    "sdp":"balabala"
+}
+```
