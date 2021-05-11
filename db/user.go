@@ -15,7 +15,12 @@ type User struct {
 func (u *User) Login() bool {
 	var p, n string
 	err := u_login.QueryRow(u.Id).Scan(&p, &n)
-	return err == nil && p == u.Psw
+	if err == nil && p == u.Psw {
+		u.Psw = p
+		u.Name = n
+		return true
+	}
+	return false
 }
 
 // 当前结构体是否与uid为好友

@@ -18,9 +18,10 @@ create table if not exists friends(
 );
 
 create table if not exists convs(
-	s_id	int			not null	auto_increment,
-	s_name	varchar(31)	null,	-- 当会话是好友间会话，会话名为null
-	owner	int 		null,	-- 当会话是好友间会话，会话所有者为null
+	s_id		int			not null	auto_increment,
+	s_name		varchar(31)	null,	-- 当会话是好友间会话，会话名为null
+	owner		int 		null,	-- 当会话是好友间会话，会话所有者为null
+	is_group	boolean		not null,
 	primary key (s_id),
 	foreign key (owner) references users(u_id)
 	-- 当会话所有者被删除，应当任意指定一名新群主or系统来当群主，而非解散整个群聊
