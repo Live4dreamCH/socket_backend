@@ -19,6 +19,7 @@ func init() {
 }
 
 func main() {
+	// rand.Seed(1)
 	r := gin.Default()
 	r.POST("/login", login)
 	r.POST("/addfriend", addfriend)

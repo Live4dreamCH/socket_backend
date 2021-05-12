@@ -40,6 +40,9 @@ var (
 	set_has_fmi *sql.Stmt
 	get_has_fmi *sql.Stmt
 	get_fmi     *sql.Stmt
+
+	new_conv     *sql.Stmt
+	add_conv_mem *sql.Stmt
 )
 
 func init() {
@@ -81,8 +84,8 @@ func init() {
 	check(err)
 
 	set_fr_ans, err = dbp.Prepare(
-		`insert into fr_notices (u_id, fr_id, is_ans, ans)
-		values (?, ?, 1, ?);`)
+		`insert into fr_notices (u_id, fr_id, is_ans, ans, conv_id)
+		values (?, ?, 1, ?, ?);`)
 	check(err)
 
 	get_fr_req, err = dbp.Prepare(
@@ -122,5 +125,15 @@ func init() {
 		`select first_msg_id
 		from users
 		where u_id=?;`)
+	check(err)
+
+	new_conv, err = dbp.Prepare(
+		`insert into convs (is_group)
+		values (0);`)
+	check(err)
+
+	add_conv_mem, err = dbp.Prepare(
+		`insert into conv_members (conv_id, mem_id)
+		values (?,?);`)
 	check(err)
 }

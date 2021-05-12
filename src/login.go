@@ -34,8 +34,8 @@ type wl struct {
 // ws登录逻辑
 func wsLogin(conn *websocket.Conn) (suss bool, uid int) {
 	var req wl
+	conn.SetReadDeadline(time.Now().Add(time.Second * 5))
 	for req.Op != "login" {
-		conn.SetReadDeadline(time.Now().Add(time.Second * 5))
 		err := conn.ReadJSON(&req)
 		if err != nil {
 			conn.WriteJSON(gin.H{"op": "login", "ack": req.Seq, "res": "NO"})

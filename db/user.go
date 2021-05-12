@@ -54,7 +54,7 @@ func (u *User) AddFriend(frid int) (suss bool, err error) {
 }
 
 // 加载昵称
-func (u *User) getName() bool {
+func (u *User) GetName() bool {
 	err := u_get_name.QueryRow(u.Id).Scan(&u.Name)
 	if err != nil {
 		log.Println(err)
@@ -64,7 +64,7 @@ func (u *User) getName() bool {
 }
 
 // 下线时, 存储好友请求
-func (u *User) storeFrReq(frid int) (suss bool) {
+func (u *User) StoreFrReq(frid int) (suss bool) {
 	res, err := set_fr_req.Exec(u.Id, frid)
 	if err != nil {
 		return
@@ -78,7 +78,7 @@ func (u *User) storeFrReq(frid int) (suss bool) {
 }
 
 // 上线时, 删除所有暂存好友请求/回复
-func (u *User) delFrNotice() (rows int) {
+func (u *User) DelFrNotice() (rows int) {
 	res, err := del_fr_ntc.Exec(u.Id)
 	if err != nil {
 		return
@@ -92,8 +92,8 @@ func (u *User) delFrNotice() (rows int) {
 }
 
 // 下线时, 存储好友回复
-func (u *User) storeFrAns(frid int, ans bool) (suss bool) {
-	res, err := set_fr_ans.Exec(u.Id, frid, ans)
+func (u *User) StoreFrAns(frid int, ans bool, conv_id int) (suss bool) {
+	res, err := set_fr_ans.Exec(u.Id, frid, ans, conv_id)
 	if err != nil {
 		return
 	}
@@ -106,7 +106,7 @@ func (u *User) storeFrAns(frid int, ans bool) (suss bool) {
 }
 
 // 下线时, 存储第一条消息id, 其余消息不影响
-func (u *User) storeOfflineMsg(frid int, ans bool) (suss bool) {
+func (u *User) StoreOfflineMsg(frid int, ans bool) (suss bool) {
 	res, err := set_fr_ans.Exec(u.Id, frid, ans)
 	if err != nil {
 		return

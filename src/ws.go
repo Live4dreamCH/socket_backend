@@ -35,14 +35,10 @@ func msgListen(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msgRouter.l.Lock()
-	msgRouter.m[uid] = &wsLink{conn: conn, req_num: 0}
+	msgRouter.m[uid] = &wsLink{conn: conn, seq_num: 0}
 	msgRouter.l.Unlock()
 
 	msgRead(conn, uid)
-
-	msgRouter.l.Lock()
-	delete(msgRouter.m, uid)
-	msgRouter.l.Unlock()
 }
 
 // 用uid找到ws链接
@@ -54,7 +50,7 @@ type wsRouter struct {
 // ws链接
 type wsLink struct {
 	conn    *websocket.Conn
-	req_num int // 发送时的请求号
+	seq_num int // 发送时的请求号
 	l       sync.Mutex
 }
 
@@ -94,12 +90,16 @@ type wsSDP struct {
 func msgRead(conn *websocket.Conn, uid int) {
 	for {
 		ty, b, err := conn.ReadMessage()
-		if ty != websocket.TextMessage {
-			continue
-		}
 		if err != nil {
+			conn.Close()
+			msgRouter.l.Lock()
+			delete(msgRouter.m, uid)
+			msgRouter.l.Unlock()
 			log.Println(err)
 			break
+		}
+		if ty != websocket.TextMessage {
+			continue
 		}
 		var head wsMain
 		err = json.Unmarshal(b, &head)
@@ -134,7 +134,7 @@ func msgCopy(uid int, b []byte) bool {
 	}
 	link.l.Lock()
 	err := link.conn.WriteMessage(websocket.TextMessage, b) // todo：这里seq没有用到
-	link.req_num++
+	link.seq_num++
 	link.l.Unlock()
 	return err == nil
 }
