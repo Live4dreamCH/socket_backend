@@ -24,13 +24,14 @@ func login(c *gin.Context) {
 	}
 }
 
-// ws登录
+// ws登录请求
 type wl struct {
 	Op  string `binding:"required"`
 	Seq int    `binding:"required"`
 	Sid string `binding:"required"`
 }
 
+// ws登录逻辑
 func wsLogin(conn *websocket.Conn) (suss bool, uid int) {
 	var req wl
 	for req.Op != "login" {

@@ -3,10 +3,14 @@ create database if not exists chat;
 use chat;
 
 create table if not exists users(
-	u_id	int			not null	auto_increment,
-	psw		varchar(51)	not null,
-	u_name	varchar(31)	not null,
+	u_id			int			not null	auto_increment,
+	psw				varchar(51)	not null,
+	u_name			varchar(31)	not null,
+	
+	first_msg_id	int 		null,
+	has_set_fmi		boolean		not null,
 	primary key	(u_id)
+-- 	foreign key (first_msg_id) references msgs(msg_id)
 );
 
 create table if not exists friends(
@@ -20,7 +24,7 @@ create table if not exists friends(
 create table if not exists convs(
 	s_id		int			not null	auto_increment,
 	s_name		varchar(31)	null,	-- 当会话是好友间会话，会话名为null
-	owner		int 		null,	-- 当会话是好友间会话，会话所有者为null
+	`owner`		int 		null,	-- 当会话是好友间会话，会话所有者为null
 	is_group	boolean		not null,
 	primary key (s_id),
 	foreign key (owner) references users(u_id)
@@ -56,6 +60,8 @@ create table if not exists msgs(
 	foreign key (s_id) references convs(s_id) on delete cascade
 );
 
+alter table users add constraint foreign key (first_msg_id) references msgs(msg_id);
+
 create table if not exists fr_notices(
 	u_id	int		not null,
 	fr_id	int 	not null,
@@ -64,7 +70,7 @@ create table if not exists fr_notices(
 	primary key (u_id, fr_id),
 	foreign key (u_id) references users(u_id) on delete cascade,
 	foreign key (fr_id) references users(u_id) on delete cascade
-)
+);
 
 -- create table conv_msgs(
 -- 	msg_id	int	not null,

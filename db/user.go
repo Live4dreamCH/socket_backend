@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"log"
 )
 
 // 对用户建模
@@ -41,6 +42,72 @@ func (u *User) AddFriend(frid int) (suss bool, err error) {
 		return
 	}
 	res, err := u_add_fr.Exec(u.Id, frid)
+	if err != nil {
+		return
+	}
+	i, err := res.RowsAffected()
+	if i != 1 || err != nil {
+		return
+	}
+	suss = true
+	return
+}
+
+// 加载昵称
+func (u *User) getName() bool {
+	err := u_get_name.QueryRow(u.Id).Scan(&u.Name)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	return true
+}
+
+// 下线时, 存储好友请求
+func (u *User) storeFrReq(frid int) (suss bool) {
+	res, err := set_fr_req.Exec(u.Id, frid)
+	if err != nil {
+		return
+	}
+	i, err := res.RowsAffected()
+	if i != 1 || err != nil {
+		return
+	}
+	suss = true
+	return
+}
+
+// 上线时, 删除所有暂存好友请求/回复
+func (u *User) delFrNotice() (rows int) {
+	res, err := del_fr_ntc.Exec(u.Id)
+	if err != nil {
+		return
+	}
+	i, err := res.RowsAffected()
+	if err != nil {
+		return
+	}
+	rows = int(i)
+	return
+}
+
+// 下线时, 存储好友回复
+func (u *User) storeFrAns(frid int, ans bool) (suss bool) {
+	res, err := set_fr_ans.Exec(u.Id, frid, ans)
+	if err != nil {
+		return
+	}
+	i, err := res.RowsAffected()
+	if i != 1 || err != nil {
+		return
+	}
+	suss = true
+	return
+}
+
+// 下线时, 存储第一条消息id, 其余消息不影响
+func (u *User) storeOfflineMsg(frid int, ans bool) (suss bool) {
+	res, err := set_fr_ans.Exec(u.Id, frid, ans)
 	if err != nil {
 		return
 	}

@@ -24,9 +24,22 @@ var dbp *sql.DB
 
 // 预编译语句
 var (
-	u_login  *sql.Stmt
+	u_login    *sql.Stmt
+	u_get_name *sql.Stmt
+
 	u_has_fr *sql.Stmt
 	u_add_fr *sql.Stmt
+
+	set_fr_req *sql.Stmt
+	set_fr_ans *sql.Stmt
+	get_fr_req *sql.Stmt
+	get_fr_ans *sql.Stmt
+	del_fr_ntc *sql.Stmt
+
+	set_fmi     *sql.Stmt
+	set_has_fmi *sql.Stmt
+	get_has_fmi *sql.Stmt
+	get_fmi     *sql.Stmt
 )
 
 func init() {
@@ -45,6 +58,12 @@ func init() {
 		where u_id=?;`)
 	check(err)
 
+	u_get_name, err = dbp.Prepare(
+		`select u_name
+		from users
+		where u_id=?;`)
+	check(err)
+
 	u_has_fr, err = dbp.Prepare(
 		`select fr_id
 		from friends
@@ -56,4 +75,52 @@ func init() {
 		values (?, ?);`)
 	check(err)
 
+	set_fr_req, err = dbp.Prepare(
+		`insert into fr_notices (u_id, fr_id, is_ans)
+		values (?, ?, 0);`)
+	check(err)
+
+	set_fr_ans, err = dbp.Prepare(
+		`insert into fr_notices (u_id, fr_id, is_ans, ans)
+		values (?, ?, 1, ?);`)
+	check(err)
+
+	get_fr_req, err = dbp.Prepare(
+		`select fr_id
+		from fr_notices
+		where u_id=? and is_ans=0;`)
+	check(err)
+
+	get_fr_ans, err = dbp.Prepare(
+		`select fr_id, ans
+		from fr_notices
+		where u_id=? and is_ans=1;`)
+	check(err)
+
+	del_fr_ntc, err = dbp.Prepare(
+		`delete from fr_notices
+		where u_id=?;`)
+	check(err)
+
+	set_fmi, err = dbp.Prepare(
+		`insert into users (first_msg_id)
+		values (?);`)
+	check(err)
+
+	set_has_fmi, err = dbp.Prepare(
+		`insert into users (has_set_fmi)
+		values (?);`)
+	check(err)
+
+	get_has_fmi, err = dbp.Prepare(
+		`select has_set_fmi
+		from users
+		where u_id=?;`)
+	check(err)
+
+	get_fmi, err = dbp.Prepare(
+		`select first_msg_id
+		from users
+		where u_id=?;`)
+	check(err)
 }

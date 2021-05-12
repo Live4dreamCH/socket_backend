@@ -5,11 +5,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// 全局变量
 var sess sID
 
 var msgRouter wsRouter
 var fileRouter wsRouter
 
+// 初始化全局变量
 func init() {
 	sess.m = make(map[string]int)
 	msgRouter.m = make(map[int]*wsLink)
