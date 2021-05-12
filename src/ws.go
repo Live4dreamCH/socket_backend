@@ -13,7 +13,7 @@ import (
 // 开启ws服务
 func wsStarter() {
 	http.HandleFunc("/msg", msgListen)
-	// http.HandleFunc("/file", nil)
+	http.HandleFunc("/file", fileListen)
 
 	if err := http.ListenAndServe(":43852", nil); err != nil {
 		log.Fatal("ListenAndServe:", err)
@@ -42,6 +42,26 @@ func msgListen(w http.ResponseWriter, r *http.Request) {
 	msgRead(conn, uid)
 }
 
+// 处理新ws连接
+func fileListen(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	suss, uid := wsLogin(conn)
+	if !suss {
+		conn.Close()
+		return
+	}
+
+	fileRouter.l.Lock()
+	fileRouter.m[uid] = &wsLink{conn: conn, seq_num: 0}
+	fileRouter.l.Unlock()
+
+	fileRead(conn, uid)
+}
+
 // 用uid找到ws链接
 type wsRouter struct {
 	m map[int]*wsLink
@@ -57,34 +77,39 @@ type wsLink struct {
 
 // ws结构的共有属性
 type wsMain struct {
-	Op  string `binding:"required"`
-	Seq int
+	Op  string `json:"op" binding:"required"`
+	Seq int    `json:"seq"`
 }
 
 // ws好友申请的属性
 type wsFrReq struct {
-	Frid int
-	Name string
+	Frid int    `json:"frid"`
+	Name string `json:"name"`
 }
 
 // ws好友回复的属性
 type wsFrAns struct {
-	Frid int
-	Name string
+	Frid int    `json:"frid"`
+	Name string `json:"name"`
 }
 
 type wsMsg struct {
-	Conv_id int
-	Sender  int
-	Time    string
-	Type    string
-	Content string
+	Conv_id int    `json:"conv_id"`
+	Sender  int    `json:"sender"`
+	Time    string `json:"time"`
+	Type    string `json:"type"`
+	Content string `json:"content"`
 }
 
 type wsSDP struct {
-	From int
-	To   int
-	Sdp  string
+	From int    `json:"from"`
+	To   int    `json:"to"`
+	Sdp  string `json:"sdp"`
+}
+
+type wsConnect struct {
+	wsSDP
+	wsMain
 }
 
 // 接收ws包
@@ -112,9 +137,9 @@ func msgRead(conn *websocket.Conn, uid int) {
 		case "msg":
 			log.Println(msgForward(uid, b))
 		case "connect":
-			var sdp_pkg wsSDP
-			json.Unmarshal(b, &sdp_pkg)
-			msgCopy(sdp_pkg.To, b)
+			msgCopy(b)
+		case "connect response":
+			msgCopy(b)
 		}
 		if err != nil {
 			log.Println(err)
@@ -123,16 +148,77 @@ func msgRead(conn *websocket.Conn, uid int) {
 	}
 }
 
-func msgCopy(uid int, b []byte) bool {
+type wsFile struct {
+	Op      string `binding:"required"`
+	Conv_id int    `binding:"required"`
+}
+
+// 接收ws包
+func fileRead(conn *websocket.Conn, uid int) error {
+	var mems []int
+	for {
+		ty, b, err := conn.ReadMessage()
+		if err != nil {
+			conn.Close()
+			fileRouter.l.Lock()
+			delete(fileRouter.m, uid)
+			fileRouter.l.Unlock()
+			log.Println(err)
+			return err
+		}
+		if ty == websocket.TextMessage {
+			var head wsFile
+			err = json.Unmarshal(b, &head)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			if head.Op == "start" {
+				mems, err = db.GetOtherConvMems(uid, head.Conv_id)
+				if err != nil {
+					log.Println(err)
+				} else {
+					log.Println("mems changed into:", mems)
+				}
+			}
+		}
+		for _, i := range mems {
+			fileRouter.l.RLock()
+			link, ok := fileRouter.m[i]
+			fileRouter.l.RUnlock()
+
+			if !ok {
+				// todo:记录第一条离线消息
+				continue
+			}
+			link.l.Lock()
+			err := link.conn.WriteMessage(ty, b)
+			// link.seq_num++
+			link.l.Unlock()
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			log.Println("file forward:", string(b), "from", uid, "to", i)
+		}
+		return nil
+
+	}
+}
+
+func msgCopy(b []byte) bool {
+	var pkg wsConnect
+	json.Unmarshal(b, &pkg)
+
 	msgRouter.l.RLock()
-	link, ok := msgRouter.m[uid]
+	link, ok := msgRouter.m[pkg.To]
 	msgRouter.l.RUnlock()
 
 	if !ok {
 		return false
 	}
 	link.l.Lock()
-	err := link.conn.WriteMessage(websocket.TextMessage, b) // todo：这里seq没有用到
+	err := link.conn.WriteJSON(pkg)
 	link.seq_num++
 	link.l.Unlock()
 	return err == nil
@@ -151,6 +237,7 @@ func msgForward(uid int, b []byte) (err error) {
 	}
 	pkg.Sender = uid
 	mems, err := db.GetOtherConvMems(uid, pkg.Conv_id)
+	log.Println(mems)
 	if err != nil {
 		return
 	}
@@ -172,7 +259,7 @@ func msgForward(uid int, b []byte) (err error) {
 			log.Println(err)
 			continue
 		}
-		log.Println("forward:", pkg, "from", uid, "to", i)
+		log.Println("msg forward:", pkg, "from", uid, "to", i)
 	}
 	return nil
 }

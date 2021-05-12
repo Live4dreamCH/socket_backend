@@ -238,13 +238,38 @@ B在用户操作(同意/拒绝)后, 也向服务器发送http请求, 服务器�
 
 形式上，文件传输总是由一个文字型的ws包开始，它内部用json格式说明了待传文件的信息，把它叫做协商包；其后紧随若干个二进制型的ws包，它们就是文件的内容，把它叫做内容包，每个包长度1kB，最后一个可以短一些。
 
-#### 协商包
+#### 开始包
 
 ```json
 {
-    "file name": "yuanshen.exe",
-    "file len": 2905792,
+    "op":"start",
+    "conv_id":2,
+    "name": "yuanshen.exe",
+    "len": 2905792,
     "start":0,
+    "end":2838
+}
+```
+
+#### 暂停包
+
+```json
+{
+    "op":"pause",
+    "conv_id":2,
+    "name": "yuanshen.exe",
+}
+```
+
+#### 继续包
+
+```json
+{
+    "op":"start",
+    "conv_id":2,
+    "name": "yuanshen.exe",
+    "len": 2905792,
+    "start":1000,
     "end":2838
 }
 ```
