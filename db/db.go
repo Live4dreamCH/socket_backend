@@ -43,6 +43,8 @@ var (
 
 	new_conv     *sql.Stmt
 	add_conv_mem *sql.Stmt
+	//其它成员
+	get_conv_mems *sql.Stmt
 )
 
 func init() {
@@ -135,5 +137,11 @@ func init() {
 	add_conv_mem, err = dbp.Prepare(
 		`insert into conv_members (conv_id, mem_id)
 		values (?,?);`)
+	check(err)
+
+	get_conv_mems, err = dbp.Prepare(
+		`select mem_id
+		from conv_members
+		where conv_id = ? and mem_id != ?;`)
 	check(err)
 }

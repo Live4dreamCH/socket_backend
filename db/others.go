@@ -17,3 +17,21 @@ func CreateConv(u1, u2 int) (conv_id int, err error) {
 	_, err = add_conv_mem.Exec(conv_id, u2)
 	return
 }
+
+func GetOtherConvMems(uid, conv_id int) (mems []int, err error) {
+	rows, err := get_conv_mems.Query(conv_id, uid)
+	if err != nil {
+		return
+	}
+	for rows.Next() {
+		var uid int
+		err = rows.Scan(&uid)
+		if err != nil {
+			return
+		}
+		mems = append(mems, uid)
+	}
+	rows.Close()
+
+	return
+}

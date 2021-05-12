@@ -1,3 +1,4 @@
+DROP SCHEMA `chat`;
 create database if not exists chat;
 
 use chat;

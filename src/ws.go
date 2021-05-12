@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/Live4dreamCH/socket_backend/db"
 	"github.com/gorilla/websocket"
 )
 
@@ -109,9 +110,7 @@ func msgRead(conn *websocket.Conn, uid int) {
 		}
 		switch head.Op {
 		case "msg":
-			for i := range msgRouter.m {
-				msgCopy(i, b)
-			}
+			log.Println(msgForward(uid, b))
 		case "connect":
 			var sdp_pkg wsSDP
 			json.Unmarshal(b, &sdp_pkg)
@@ -137,4 +136,43 @@ func msgCopy(uid int, b []byte) bool {
 	link.seq_num++
 	link.l.Unlock()
 	return err == nil
+}
+
+func msgForward(uid int, b []byte) (err error) {
+	// todo: 第一条离线消息的记录
+
+	var pkg struct {
+		wsMain
+		wsMsg
+	}
+	err = json.Unmarshal(b, &pkg)
+	if err != nil {
+		return
+	}
+	pkg.Sender = uid
+	mems, err := db.GetOtherConvMems(uid, pkg.Conv_id)
+	if err != nil {
+		return
+	}
+	for _, i := range mems {
+		msgRouter.l.RLock()
+		link, ok := msgRouter.m[i]
+		msgRouter.l.RUnlock()
+
+		if !ok {
+			// todo:记录第一条离线消息
+			continue
+		}
+		link.l.Lock()
+		pkg.Seq = link.seq_num
+		err := link.conn.WriteJSON(pkg)
+		link.seq_num++
+		link.l.Unlock()
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		log.Println("forward:", pkg, "from", uid, "to", i)
+	}
+	return nil
 }
