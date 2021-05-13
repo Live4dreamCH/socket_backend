@@ -14,13 +14,14 @@ func login(c *gin.Context) {
 	var u db.User
 	if err := c.ShouldBindJSON(&u); err != nil {
 		c.JSON(400, gin.H{"res": "NO", "reason": "json bind error"})
+		return
+	}
+
+	if u.Login() {
+		sid := sess.set(u.Id)
+		c.JSON(http.StatusOK, gin.H{"res": "OK", "sid": sid, "name": u.Name})
 	} else {
-		if u.Login() {
-			sid := sess.set(u.Id)
-			c.JSON(http.StatusOK, gin.H{"res": "OK", "sid": sid, "name": u.Name})
-		} else {
-			c.JSON(http.StatusOK, gin.H{"res": "NO", "reason": "wrong password"})
-		}
+		c.JSON(http.StatusOK, gin.H{"res": "NO", "reason": "wrong password"})
 	}
 }
 
@@ -38,7 +39,7 @@ func wsLogin(conn *websocket.Conn) (suss bool, uid int) {
 	for req.Op != "login" {
 		err := conn.ReadJSON(&req)
 		if err != nil {
-			conn.WriteJSON(gin.H{"op": "login", "ack": req.Seq, "res": "NO"})
+			conn.WriteJSON(gin.H{"op": "login", "ack": req.Seq, "res": "NO", "reason": err})
 			return
 		}
 	}
@@ -46,7 +47,7 @@ func wsLogin(conn *websocket.Conn) (suss bool, uid int) {
 
 	uid, err := sess.get(req.Sid)
 	if err != nil {
-		conn.WriteJSON(gin.H{"op": "login", "ack": req.Seq, "res": "NO"})
+		conn.WriteJSON(gin.H{"op": "login", "ack": req.Seq, "res": "NO", "reason": "sid wrong"})
 		return
 	}
 	conn.WriteJSON(gin.H{"op": "login", "ack": req.Seq, "res": "OK"})

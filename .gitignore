@@ -19,3 +19,5 @@
 /pwd
 play/ws/a.txt
 doc/protocol.jsonc
+play/
+db/try.go

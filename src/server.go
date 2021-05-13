@@ -2,6 +2,8 @@
 package main
 
 import (
+	"log"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -13,6 +15,8 @@ var fileRouter wsRouter
 
 // 初始化全局变量
 func init() {
+	log.SetPrefix("LOG: ")
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 	sess.m = make(map[string]int)
 	msgRouter.m = make(map[int]*wsLink)
 	fileRouter.m = make(map[int]*wsLink)

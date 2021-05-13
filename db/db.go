@@ -13,6 +13,7 @@ import (
 // 	Store() error
 // }
 
+// 严厉检查，让问题在启动时得以发现
 func check(err error) {
 	if err != nil {
 		panic(err)

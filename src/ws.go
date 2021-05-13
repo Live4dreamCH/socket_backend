@@ -81,18 +81,6 @@ type wsMain struct {
 	Seq int    `json:"seq"`
 }
 
-// ws好友申请的属性
-type wsFrReq struct {
-	Frid int    `json:"frid"`
-	Name string `json:"name"`
-}
-
-// ws好友回复的属性
-type wsFrAns struct {
-	Frid int    `json:"frid"`
-	Name string `json:"name"`
-}
-
 type wsMsg struct {
 	Conv_id int    `json:"conv_id"`
 	Sender  int    `json:"sender"`
@@ -116,15 +104,19 @@ type wsConnect struct {
 func msgRead(conn *websocket.Conn, uid int) {
 	for {
 		ty, b, err := conn.ReadMessage()
-		if err != nil {
+		if websocket.IsCloseError(err, websocket.CloseMessage) {
 			conn.Close()
 			msgRouter.l.Lock()
 			delete(msgRouter.m, uid)
 			msgRouter.l.Unlock()
-			log.Println(err)
 			break
 		}
+		if err != nil {
+			log.Println(err)
+			continue
+		}
 		if ty != websocket.TextMessage {
+			log.Println("a binary msg pkg received")
 			continue
 		}
 		var head wsMain
@@ -135,15 +127,14 @@ func msgRead(conn *websocket.Conn, uid int) {
 		}
 		switch head.Op {
 		case "msg":
-			log.Println(msgForward(uid, b))
+			err = msgForward(uid, b)
+			if err != nil {
+				log.Println(err)
+			}
 		case "connect":
 			msgCopy(b)
 		case "connect response":
 			msgCopy(b)
-		}
-		if err != nil {
-			log.Println(err)
-			continue
 		}
 	}
 }
@@ -154,18 +145,23 @@ type wsFile struct {
 }
 
 // 接收ws包
-func fileRead(conn *websocket.Conn, uid int) error {
+func fileRead(conn *websocket.Conn, uid int) {
 	var mems []int
 	for {
 		ty, b, err := conn.ReadMessage()
-		if err != nil {
+		if websocket.IsCloseError(err, websocket.CloseMessage) {
 			conn.Close()
 			fileRouter.l.Lock()
 			delete(fileRouter.m, uid)
 			fileRouter.l.Unlock()
-			log.Println(err)
-			return err
+			break
 		}
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		// 确定转发目标
 		if ty == websocket.TextMessage {
 			var head wsFile
 			err = json.Unmarshal(b, &head)
@@ -182,15 +178,16 @@ func fileRead(conn *websocket.Conn, uid int) error {
 				}
 			}
 		}
+
+		// 进行转发
 		for _, i := range mems {
 			fileRouter.l.RLock()
 			link, ok := fileRouter.m[i]
 			fileRouter.l.RUnlock()
-
 			if !ok {
-				// todo:记录第一条离线消息
 				continue
 			}
+
 			link.l.Lock()
 			err := link.conn.WriteMessage(ty, b)
 			// link.seq_num++
@@ -201,11 +198,10 @@ func fileRead(conn *websocket.Conn, uid int) error {
 			}
 			log.Println("file forward:", string(b), "from", uid, "to", i)
 		}
-		return nil
-
 	}
 }
 
+// SDP的转发
 func msgCopy(b []byte) bool {
 	var pkg wsConnect
 	json.Unmarshal(b, &pkg)
@@ -225,8 +221,6 @@ func msgCopy(b []byte) bool {
 }
 
 func msgForward(uid int, b []byte) (err error) {
-	// todo: 第一条离线消息的记录
-
 	var pkg struct {
 		wsMain
 		wsMsg
@@ -236,8 +230,11 @@ func msgForward(uid int, b []byte) (err error) {
 		return
 	}
 	pkg.Sender = uid
+
+	// todo:存储
+
+	// 转发
 	mems, err := db.GetOtherConvMems(uid, pkg.Conv_id)
-	log.Println(mems)
 	if err != nil {
 		return
 	}
@@ -245,11 +242,11 @@ func msgForward(uid int, b []byte) (err error) {
 		msgRouter.l.RLock()
 		link, ok := msgRouter.m[i]
 		msgRouter.l.RUnlock()
-
 		if !ok {
 			// todo:记录第一条离线消息
 			continue
 		}
+
 		link.l.Lock()
 		pkg.Seq = link.seq_num
 		err := link.conn.WriteJSON(pkg)

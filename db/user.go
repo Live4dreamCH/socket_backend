@@ -1,7 +1,6 @@
 package db
 
 import (
-	"fmt"
 	"log"
 )
 
@@ -64,7 +63,7 @@ func (u *User) GetName() bool {
 }
 
 // 下线时, 存储好友请求
-func (u *User) StoreFrReq(frid int) (suss bool) {
+func (u *User) StoreFrReq(frid int) (err error) {
 	res, err := set_fr_req.Exec(u.Id, frid)
 	if err != nil {
 		return
@@ -73,7 +72,6 @@ func (u *User) StoreFrReq(frid int) (suss bool) {
 	if i != 1 || err != nil {
 		return
 	}
-	suss = true
 	return
 }
 
@@ -92,7 +90,7 @@ func (u *User) DelFrNotice() (rows int) {
 }
 
 // 下线时, 存储好友回复
-func (u *User) StoreFrAns(frid int, ans bool, conv_id int) (suss bool) {
+func (u *User) StoreFrAns(frid int, ans bool, conv_id int) (err error) {
 	res, err := set_fr_ans.Exec(u.Id, frid, ans, conv_id)
 	if err != nil {
 		return
@@ -101,7 +99,6 @@ func (u *User) StoreFrAns(frid int, ans bool, conv_id int) (suss bool) {
 	if i != 1 || err != nil {
 		return
 	}
-	suss = true
 	return
 }
 
@@ -120,5 +117,5 @@ func (u *User) StoreOfflineMsg(frid int, ans bool) (suss bool) {
 }
 
 func (u *User) Print() {
-	fmt.Printf("id=%d, psw=%s, name=%s\n", u.Id, u.Psw, u.Name)
+	log.Printf("id=%d, psw=%s, name=%s\n", u.Id, u.Psw, u.Name)
 }
