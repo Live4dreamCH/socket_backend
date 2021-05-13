@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/Live4dreamCH/socket_backend/db"
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
@@ -132,9 +133,9 @@ func msgRead(conn *websocket.Conn, uid int) {
 				log.Println(err)
 			}
 		case "connect":
-			msgCopy(b)
+			msgCopy(uid, b)
 		case "connect response":
-			msgCopy(b)
+			msgCopy(uid, b)
 		}
 	}
 }
@@ -202,18 +203,33 @@ func fileRead(conn *websocket.Conn, uid int) {
 }
 
 // SDP的转发
-func msgCopy(b []byte) bool {
+func msgCopy(uid int, b []byte) bool {
 	var pkg wsConnect
 	json.Unmarshal(b, &pkg)
 
 	msgRouter.l.RLock()
 	link, ok := msgRouter.m[pkg.To]
 	msgRouter.l.RUnlock()
-
+	// 对方不在线，回复发送方
 	if !ok {
+		msgRouter.l.RLock()
+		link, ok = msgRouter.m[uid]
+		msgRouter.l.RUnlock()
+		if ok {
+			link.l.Lock()
+			err := link.conn.WriteJSON(gin.H{"op": "conncet error", "seq": link.seq_num, "ack": pkg.Seq, "reason": "offline"})
+			link.seq_num++
+			link.l.Unlock()
+			if err != nil {
+				log.Println(err)
+			}
+		}
 		return false
 	}
+
+	// 对方在线, 进行转发
 	link.l.Lock()
+	pkg.Seq = link.seq_num
 	err := link.conn.WriteJSON(pkg)
 	link.seq_num++
 	link.l.Unlock()
