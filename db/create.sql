@@ -52,8 +52,8 @@ create table if not exists msgs(
 	msg_id		int 		not null	auto_increment,
 	sender		int 		not null,	-- 消息转发后, sender变为转发者的ID
 	msg_time	datetime	not null,
-	con_id		int 		not null,
-	conv_id		int 		not null,
+	con_id		int 		not null,	-- 消息内容编号
+	conv_id		int 		not null,	-- 消息所属的会话号
 	primary key (msg_id),
 	foreign key (sender) references users(u_id),
 	-- 出于安全因素，删除用户不能删除其已有聊天记录

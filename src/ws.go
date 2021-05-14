@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/Live4dreamCH/socket_backend/db"
 	"github.com/gin-gonic/gin"
@@ -80,14 +81,6 @@ type wsLink struct {
 type wsMain struct {
 	Op  string `json:"op" binding:"required"`
 	Seq int    `json:"seq"`
-}
-
-type wsMsg struct {
-	Conv_id int    `json:"conv_id"`
-	Sender  int    `json:"sender"`
-	Time    string `json:"time"`
-	Type    string `json:"type"`
-	Content string `json:"content"`
 }
 
 type wsSDP struct {
@@ -239,21 +232,28 @@ func msgCopy(uid int, b []byte) bool {
 func msgForward(uid int, b []byte) (err error) {
 	var pkg struct {
 		wsMain
-		wsMsg
+		db.WsMsg
 	}
 	err = json.Unmarshal(b, &pkg)
 	if err != nil {
 		return
 	}
 	pkg.Sender = uid
-
-	// todo:存储
+	pkg.Time = time.Now().Format("2006-01-02 15:04:05")
 
 	// 转发
 	mems, err := db.GetOtherConvMems(uid, pkg.Conv_id)
 	if err != nil {
 		return
 	}
+	if len(mems) == 0 {
+		log.Println("a msg with no forward target:", pkg)
+		return
+	}
+
+	// todo:存储
+	pkg.Save()
+
 	for _, i := range mems {
 		msgRouter.l.RLock()
 		link, ok := msgRouter.m[i]
@@ -272,7 +272,7 @@ func msgForward(uid int, b []byte) (err error) {
 			log.Println(err)
 			continue
 		}
-		log.Println("msg forward:", pkg, "from", uid, "to", i)
+		log.Println("msg forward:", pkg, "to", i)
 	}
 	return nil
 }

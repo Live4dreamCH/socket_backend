@@ -55,7 +55,7 @@ func wsLogin(conn *websocket.Conn) (suss bool, uid int) {
 	return
 }
 
-// todo: 登陆时推送所有下线时产生的消息
+// todo: 登陆时推送所有下线时产生的消息、好友请求与回复
 func notice() {
 
 }

@@ -14,14 +14,12 @@ type sID struct {
 }
 
 // 添加一个用户
-// 若已在线, 返回原有sid
-// 否则, 生成新sid, 添加并返回
+// 生成新sid, 添加并返回
 func (s *sID) set(uid int) string {
-	s.l.RLock()
+	s.l.Lock()
 	for sid, u := range s.m {
 		if u == uid {
-			s.l.RUnlock()
-			return sid
+			delete(s.m, sid)
 		}
 	}
 
@@ -31,8 +29,6 @@ func (s *sID) set(uid int) string {
 		sid = newSID()
 		_, ok = s.m[sid]
 	}
-	s.l.RUnlock()
-	s.l.Lock()
 	s.m[sid] = uid
 	s.l.Unlock()
 	return sid
@@ -49,12 +45,6 @@ func (s *sID) get(sid string) (int, error) {
 		return uid, nil
 	}
 	return 0, errors.New(sid + " not found!\n")
-}
-
-func (s *sID) rm(sid string) {
-	s.l.RLock()
-	defer s.l.RUnlock()
-	delete(s.m, sid)
 }
 
 // 随机生成一个sid

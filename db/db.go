@@ -50,6 +50,10 @@ var (
 	Get_fr_list       *sql.Stmt
 	Get_conv_list     *sql.Stmt
 	Get_conv_mem_list *sql.Stmt
+
+	save_content *sql.Stmt
+	save_msg     *sql.Stmt
+	Load_msg     *sql.Stmt
 )
 
 func init() {
@@ -134,9 +138,13 @@ func init() {
 		values (?,?);`)
 	check(err)
 	get_conv_mems, err = dbp.Prepare(
-		`select mem_id
-		from conv_members
-		where conv_id = ? and mem_id != ?;`)
+		`select cm1.mem_id
+		from conv_members cm1
+		where cm1.conv_id = ? and cm1.mem_id != ? and cm1.conv_id in (
+			select cm2.conv_id
+			from conv_members cm2
+			where cm2.mem_id = ?
+		);`)
 	check(err)
 
 	Get_fr_list, err = dbp.Prepare(
@@ -161,5 +169,20 @@ func init() {
 			from conv_members cm2
 			where cm2.mem_id = ?
 		);`)
+	check(err)
+
+	save_content, err = dbp.Prepare(
+		`insert into contents(con_type, con)
+		values(?, ?);`)
+	check(err)
+	save_msg, err = dbp.Prepare(
+		`insert into msgs(sender, msg_time, con_id, conv_id)
+		values(?, ?, ?, ?);`)
+	check(err)
+	// 选取消息: 用户uid所在的所有会话里, 发送者不为用户uid的, 编号大于等于msg_id的, 消息以及消息内容
+	Load_msg, err = dbp.Prepare(
+		`select m.sender, m.msg_time, m.conv_id, c.con_type, c.con
+		from msgs m, contents c, conv_members cm
+		where cm.mem_id = ? and cm.conv_id = m.conv_id and m.sender != ? and m.msg_id >= ? and m.con_id = c.con_id;`)
 	check(err)
 }

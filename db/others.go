@@ -19,7 +19,7 @@ func CreateConv(u1, u2 int) (conv_id int, err error) {
 }
 
 func GetOtherConvMems(uid, conv_id int) (mems []int, err error) {
-	rows, err := get_conv_mems.Query(conv_id, uid)
+	rows, err := get_conv_mems.Query(conv_id, uid, uid)
 	if err != nil {
 		return
 	}
@@ -34,4 +34,16 @@ func GetOtherConvMems(uid, conv_id int) (mems []int, err error) {
 	}
 
 	return
+}
+
+type WsMsg struct {
+	Conv_id int    `json:"conv_id"`
+	Sender  int    `json:"sender"`
+	Time    string `json:"time"`
+	Type    string `json:"type"`
+	Content string `json:"content"`
+}
+
+func (msg *WsMsg) Save() {
+	save_content.Exec()
 }
