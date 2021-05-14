@@ -23,6 +23,7 @@ func GetOtherConvMems(uid, conv_id int) (mems []int, err error) {
 	if err != nil {
 		return
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var uid int
 		err = rows.Scan(&uid)
@@ -31,7 +32,6 @@ func GetOtherConvMems(uid, conv_id int) (mems []int, err error) {
 		}
 		mems = append(mems, uid)
 	}
-	rows.Close()
 
 	return
 }

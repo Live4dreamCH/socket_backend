@@ -28,6 +28,10 @@ func main() {
 	r.POST("/login", login)
 	r.POST("/addfriend", addfriend)
 	r.POST("/resfriend", resfriend)
+	r.POST("/name", nameService)
+	r.POST("/friendlist", friendList)
+	r.POST("/convlist", convList)
+	r.POST("/convmemlist", convMemList)
 	go wsStarter()
 	err := r.Run(":43851")
 	if err != nil {

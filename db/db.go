@@ -46,6 +46,10 @@ var (
 	add_conv_mem *sql.Stmt
 	//其它成员
 	get_conv_mems *sql.Stmt
+
+	Get_fr_list       *sql.Stmt
+	Get_conv_list     *sql.Stmt
+	Get_conv_mem_list *sql.Stmt
 )
 
 func init() {
@@ -63,7 +67,6 @@ func init() {
 		from users
 		where u_id=?;`)
 	check(err)
-
 	u_get_name, err = dbp.Prepare(
 		`select u_name
 		from users
@@ -75,7 +78,6 @@ func init() {
 		from friends
 		where my_id=? and fr_id=?;`)
 	check(err)
-
 	u_add_fr, err = dbp.Prepare(
 		`insert into friends (my_id,fr_id)
 		values (?, ?);`)
@@ -85,24 +87,20 @@ func init() {
 		`insert into fr_notices (u_id, fr_id, is_ans)
 		values (?, ?, 0);`)
 	check(err)
-
 	set_fr_ans, err = dbp.Prepare(
 		`insert into fr_notices (u_id, fr_id, is_ans, ans, conv_id)
 		values (?, ?, 1, ?, ?);`)
 	check(err)
-
 	get_fr_req, err = dbp.Prepare(
 		`select fr_id
 		from fr_notices
 		where u_id=? and is_ans=0;`)
 	check(err)
-
 	get_fr_ans, err = dbp.Prepare(
 		`select fr_id, ans
 		from fr_notices
 		where u_id=? and is_ans=1;`)
 	check(err)
-
 	del_fr_ntc, err = dbp.Prepare(
 		`delete from fr_notices
 		where u_id=?;`)
@@ -112,18 +110,15 @@ func init() {
 		`insert into users (first_msg_id)
 		values (?);`)
 	check(err)
-
 	set_has_fmi, err = dbp.Prepare(
 		`insert into users (has_set_fmi)
 		values (?);`)
 	check(err)
-
 	get_has_fmi, err = dbp.Prepare(
 		`select has_set_fmi
 		from users
 		where u_id=?;`)
 	check(err)
-
 	get_fmi, err = dbp.Prepare(
 		`select first_msg_id
 		from users
@@ -134,15 +129,37 @@ func init() {
 		`insert into convs (is_group)
 		values (0);`)
 	check(err)
-
 	add_conv_mem, err = dbp.Prepare(
 		`insert into conv_members (conv_id, mem_id)
 		values (?,?);`)
 	check(err)
-
 	get_conv_mems, err = dbp.Prepare(
 		`select mem_id
 		from conv_members
 		where conv_id = ? and mem_id != ?;`)
+	check(err)
+
+	Get_fr_list, err = dbp.Prepare(
+		`select u.u_id, u.u_name
+		from friends fr, users u
+		where fr.my_id = ? and fr.fr_id = u.u_id;`)
+	check(err)
+	Get_conv_list, err = dbp.Prepare(
+		`select cm1.conv_id, u.u_name
+		from conv_members cm1, users u
+		where cm1.mem_id != ? and u.u_id = cm1.mem_id and cm1.conv_id in (
+			select cm2.conv_id
+			from conv_members cm2
+			where cm2.mem_id=?
+		);`)
+	check(err)
+	Get_conv_mem_list, err = dbp.Prepare(
+		`select u.u_id, u.u_name
+		from conv_members cm1, users u
+		where cm1.conv_id = ? and cm1.mem_id = u.u_id and cm1.conv_id in (
+			select cm2.conv_id
+			from conv_members cm2
+			where cm2.mem_id = ?
+		);`)
 	check(err)
 }

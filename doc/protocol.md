@@ -308,6 +308,7 @@ B在用户操作(同意/拒绝)后, 也向服务器发送http请求, 服务器�
 ```json
 {
     // 请求字段缺失或数值类型错误，状态码400
+    // id为0同样会触发此回复
     "请求格式错误": {
         "res": "NO",
         "reason": "json bind error"
@@ -350,8 +351,14 @@ B在用户操作(同意/拒绝)后, 也向服务器发送http请求, 服务器�
         "res": "NO",
         "reason": "wrong sid"
     },
+    // 数据库错误详情会保存在服务器端日志, 调试有问题找后端
+    "数据库错误": {
+        "res": "NO",
+        "reason": "db err"
+    },
     "返回好友列表": {
         "res": "OK",
+        // 无好友时, 返回的不是数组, 而是一个null
         "friendlist": [
             {"id":1, "name":"mhq"},
             {"id":2, "name":"lch"}
@@ -383,8 +390,14 @@ B在用户操作(同意/拒绝)后, 也向服务器发送http请求, 服务器�
         "res": "NO",
         "reason": "wrong sid"
     },
+    // 数据库错误详情会保存在服务器端日志, 调试有问题找后端
+    "数据库错误": {
+        "res": "NO",
+        "reason": "db err"
+    },
     "返回会话列表": {
         "res": "OK",
+        // 无会话时, 返回的不是数组, 而是一个null
         "convlist": [
             {"conv_id":1, "name":"软工小组"},
             {"conv_id":2, "name":"mhq"}
@@ -418,12 +431,14 @@ B在用户操作(同意/拒绝)后, 也向服务器发送http请求, 服务器�
         "res": "NO",
         "reason": "wrong sid"
     },
-    "conv_id错误": {
+    // 数据库错误详情会保存在服务器端日志, 调试有问题找后端
+    "数据库错误": {
         "res": "NO",
-        "reason": "wrong conv_id"
+        "reason": "db err"
     },
     "返回会话成员列表": {
         "res": "OK",
+        // 无会话成员时, 返回的不是数组, 而是一个null
         "convmemlist": [
             {"id":1, "name":"mhq"},
             {"id":2, "name":"lch"}
