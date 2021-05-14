@@ -40,6 +40,7 @@ func msgListen(w http.ResponseWriter, r *http.Request) {
 	msgRouter.l.Lock()
 	msgRouter.m[uid] = &wsLink{conn: conn, seq_num: 0}
 	msgRouter.l.Unlock()
+	log.Println("user", uid, "msg ws login")
 
 	msgRead(conn, uid)
 }
@@ -60,6 +61,7 @@ func fileListen(w http.ResponseWriter, r *http.Request) {
 	fileRouter.l.Lock()
 	fileRouter.m[uid] = &wsLink{conn: conn, seq_num: 0}
 	fileRouter.l.Unlock()
+	log.Println("user", uid, "file ws login")
 
 	fileRead(conn, uid)
 }
@@ -103,14 +105,15 @@ func msgRead(conn *websocket.Conn, uid int) {
 			msgRouter.l.Lock()
 			delete(msgRouter.m, uid)
 			msgRouter.l.Unlock()
-			break
+			log.Println("user", uid, "msg ws close")
+			return
 		}
 		if err != nil {
 			log.Println(err)
-			continue
+			return
 		}
 		if ty != websocket.TextMessage {
-			log.Println("a binary msg pkg received")
+			log.Println("user", uid, "a binary msg pkg received")
 			continue
 		}
 		var head wsMain
@@ -148,11 +151,12 @@ func fileRead(conn *websocket.Conn, uid int) {
 			fileRouter.l.Lock()
 			delete(fileRouter.m, uid)
 			fileRouter.l.Unlock()
-			break
+			log.Println("user", uid, "file ws close")
+			return
 		}
 		if err != nil {
 			log.Println(err)
-			continue
+			return
 		}
 
 		// 确定转发目标
@@ -171,6 +175,7 @@ func fileRead(conn *websocket.Conn, uid int) {
 					log.Println("mems changed into:", mems)
 				}
 			}
+			log.Println("user", uid, "file ws ctrl pkg", string(b))
 		}
 
 		// 进行转发
@@ -190,7 +195,7 @@ func fileRead(conn *websocket.Conn, uid int) {
 				log.Println(err)
 				continue
 			}
-			log.Println("file forward:", string(b), "from", uid, "to", i)
+			log.Println("file pkg forward: from", uid, "to", i)
 		}
 	}
 }
@@ -217,6 +222,7 @@ func msgCopy(uid int, b []byte) bool {
 				log.Println(err)
 			}
 		}
+		log.Println("SDP from", uid, "to", pkg.To, "but target offline")
 		return false
 	}
 
@@ -226,11 +232,12 @@ func msgCopy(uid int, b []byte) bool {
 	err := link.conn.WriteJSON(pkg)
 	link.seq_num++
 	link.l.Unlock()
+	log.Println("SDP from", uid, "to", pkg.To, "forward suss:", string(b))
 	return err == nil
 }
 
 func msgForward(uid int, b []byte) (err error) {
-	var pkg struct {
+	var pkg, no_content struct {
 		wsMain
 		db.WsMsg
 	}
@@ -240,6 +247,8 @@ func msgForward(uid int, b []byte) (err error) {
 	}
 	pkg.Sender = uid
 	pkg.Time = time.Now().Format("2006-01-02 15:04:05")
+	no_content = pkg
+	no_content.Content = ""
 
 	// 转发
 	mems, err := db.GetOtherConvMems(uid, pkg.Conv_id)
@@ -247,7 +256,7 @@ func msgForward(uid int, b []byte) (err error) {
 		return
 	}
 	if len(mems) == 0 {
-		log.Println("a msg with no forward target:", pkg)
+		log.Println("a msg with no forward target:", string(b))
 		return
 	}
 
@@ -272,7 +281,7 @@ func msgForward(uid int, b []byte) (err error) {
 			log.Println(err)
 			continue
 		}
-		log.Println("msg forward:", pkg, "to", i)
+		log.Println("msg forward:", no_content, "to", i)
 	}
 	return nil
 }

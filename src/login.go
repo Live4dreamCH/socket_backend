@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -20,6 +21,7 @@ func login(c *gin.Context) {
 	if u.Login() {
 		sid := sess.set(u.Id)
 		c.JSON(http.StatusOK, gin.H{"res": "OK", "sid": sid, "name": u.Name})
+		log.Println("user", u.Id, "http login suss")
 	} else {
 		c.JSON(http.StatusOK, gin.H{"res": "NO", "reason": "wrong password"})
 	}
