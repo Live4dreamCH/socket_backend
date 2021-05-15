@@ -1,5 +1,7 @@
 package db
 
+import "log"
+
 func CreateConv(u1, u2 int) (conv_id int, err error) {
 	res, err := new_conv.Exec()
 	if err != nil {
@@ -44,6 +46,37 @@ type WsMsg struct {
 	Content string `json:"content"`
 }
 
-func (msg *WsMsg) Save() {
-	save_content.Exec()
+func (msg *WsMsg) Save() (msg_id int, suss bool) {
+	res, err := save_content.Exec(0, msg.Content)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	r, err := res.RowsAffected()
+	if r != 1 || err != nil {
+		log.Println(err)
+		return
+	}
+	con_id, err := res.LastInsertId()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	res, err = save_msg.Exec(msg.Sender, msg.Time, con_id, msg.Conv_id)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	r, err = res.RowsAffected()
+	if r != 1 || err != nil {
+		log.Println(err)
+		return
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	return int(id), true
 }

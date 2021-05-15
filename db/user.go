@@ -1,6 +1,7 @@
 package db
 
 import (
+	"database/sql"
 	"log"
 )
 
@@ -103,13 +104,32 @@ func (u *User) StoreFrAns(frid int, ans bool, conv_id int) (err error) {
 }
 
 // 下线时, 存储第一条消息id, 其余消息不影响
-func (u *User) StoreOfflineMsg(frid int, ans bool) (suss bool) {
-	res, err := set_fr_ans.Exec(u.Id, frid, ans)
-	if err != nil {
+func (u *User) StoreOfflineMsg(msg_id int) (err error) {
+	_, err = store_fmi.Exec(msg_id, u.Id)
+	return
+}
+
+// 获取第一条离线消息的msg_id, 若有离线消息，设置has_set_fmi=0
+func (u *User) GetOffMsgID() (msg_id int, suss bool) {
+	var fmi sql.NullInt32
+	err := get_fmi.QueryRow(u.Id).Scan(&fmi)
+	if err == sql.ErrNoRows && !fmi.Valid {
 		return
 	}
-	i, err := res.RowsAffected()
-	if i != 1 || err != nil {
+	msg_id = int(fmi.Int32)
+
+	row, err := set_has_fmi.Exec(u.Id)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	i, err := row.RowsAffected()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	if i != 1 {
+		log.Println("expected RowsAffected 1, but actual", i)
 		return
 	}
 	suss = true

@@ -57,7 +57,62 @@ func wsLogin(conn *websocket.Conn) (suss bool, uid int) {
 	return
 }
 
-// todo: 登陆时推送所有下线时产生的消息、好友请求与回复
-func notice() {
+// todo: 登陆时推送所有下线时产生的好友请求与回复
+func msgNotice(uid int) {
+	// 找到发送的ws连接
+	msgRouter.l.RLock()
+	link, ok := msgRouter.m[uid]
+	msgRouter.l.RUnlock()
+	if !ok {
+		log.Println("want to send Offline Msgs to user", uid, ", but conn already close")
+		return
+	}
 
+	// 获取第一条离线消息id
+	u := db.User{Id: uid}
+	fmi, suss := u.GetOffMsgID()
+	if !suss {
+		log.Println("user", uid, "login, but has no offline msgs")
+		return
+	}
+
+	// 执行查询数据库语句, 获取离线消息
+	rows, err := db.Load_msg.Query(uid, uid, fmi)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	// 读取, 发送离线消息
+	var pkg struct {
+		wsMain
+		db.WsMsg
+	}
+	pkg.Op = "msg"
+	var ty int
+	num := 0
+
+	for rows.Next() {
+		err = rows.Scan(&(pkg.Sender), &(pkg.Time), &(pkg.Conv_id), &ty, &(pkg.Content))
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		switch ty {
+		case 0:
+			pkg.Type = "text"
+		}
+
+		link.l.Lock()
+		pkg.Seq = link.seq_num
+		err = link.conn.WriteJSON(pkg)
+		link.seq_num++
+		link.l.Unlock()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		num++
+	}
+	log.Println("send", num, "Offline Msgs to user", uid)
 }

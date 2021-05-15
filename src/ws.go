@@ -42,6 +42,8 @@ func msgListen(w http.ResponseWriter, r *http.Request) {
 	msgRouter.l.Unlock()
 	log.Println("user", uid, "msg ws login")
 
+	go msgNotice(uid)
+
 	msgRead(conn, uid)
 }
 
@@ -100,16 +102,12 @@ type wsConnect struct {
 func msgRead(conn *websocket.Conn, uid int) {
 	for {
 		ty, b, err := conn.ReadMessage()
-		if websocket.IsCloseError(err, websocket.CloseMessage) {
-			conn.Close()
+		if err != nil {
 			msgRouter.l.Lock()
 			delete(msgRouter.m, uid)
 			msgRouter.l.Unlock()
-			log.Println("user", uid, "msg ws close")
-			return
-		}
-		if err != nil {
-			log.Println(err)
+			conn.Close()
+			log.Println("user", uid, "msg ws close, err:", err)
 			return
 		}
 		if ty != websocket.TextMessage {
@@ -146,16 +144,12 @@ func fileRead(conn *websocket.Conn, uid int) {
 	var mems []int
 	for {
 		ty, b, err := conn.ReadMessage()
-		if websocket.IsCloseError(err, websocket.CloseMessage) {
+		if err != nil {
 			conn.Close()
 			fileRouter.l.Lock()
 			delete(fileRouter.m, uid)
 			fileRouter.l.Unlock()
-			log.Println("user", uid, "file ws close")
-			return
-		}
-		if err != nil {
-			log.Println(err)
+			log.Println("user", uid, "file ws close, err:", err)
 			return
 		}
 
@@ -237,6 +231,7 @@ func msgCopy(uid int, b []byte) bool {
 }
 
 func msgForward(uid int, b []byte) (err error) {
+	// 包格式处理
 	var pkg, no_content struct {
 		wsMain
 		db.WsMsg
@@ -250,7 +245,7 @@ func msgForward(uid int, b []byte) (err error) {
 	no_content = pkg
 	no_content.Content = ""
 
-	// 转发
+	// 寻找目标
 	mems, err := db.GetOtherConvMems(uid, pkg.Conv_id)
 	if err != nil {
 		return
@@ -260,15 +255,26 @@ func msgForward(uid int, b []byte) (err error) {
 		return
 	}
 
-	// todo:存储
-	pkg.Save()
+	// 保存消息
+	msg_id, suss := pkg.Save()
+	if !suss {
+		log.Println(no_content, "save fail!")
+	}
 
+	// 转发
+	var u db.User
 	for _, i := range mems {
 		msgRouter.l.RLock()
 		link, ok := msgRouter.m[i]
 		msgRouter.l.RUnlock()
+		// 目标不在线, 设置离线消息提醒
 		if !ok {
-			// todo:记录第一条离线消息
+			u.Id = i
+			err = u.StoreOfflineMsg(msg_id)
+			if err != nil {
+				log.Println(err)
+			}
+			log.Println("save notice for user:", u.Id, ", of saved msg:", msg_id)
 			continue
 		}
 

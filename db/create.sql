@@ -8,8 +8,8 @@ create table if not exists users(
 	psw				varchar(51)	not null,
 	u_name			varchar(31)	not null,
 	
-	first_msg_id	int 		null,
-	has_set_fmi		boolean		not null,
+	first_msg_id	int 		null, -- 下线后接收到的第一条消息的id
+	has_set_fmi		boolean		not null, -- 是否有未读消息。有为1，无为0
 	primary key	(u_id)
 -- 	foreign key (first_msg_id) references msgs(msg_id)
 );

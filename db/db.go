@@ -37,10 +37,9 @@ var (
 	get_fr_ans *sql.Stmt
 	del_fr_ntc *sql.Stmt
 
-	set_fmi     *sql.Stmt
-	set_has_fmi *sql.Stmt
-	get_has_fmi *sql.Stmt
+	store_fmi   *sql.Stmt
 	get_fmi     *sql.Stmt
+	set_has_fmi *sql.Stmt
 
 	new_conv     *sql.Stmt
 	add_conv_mem *sql.Stmt
@@ -110,23 +109,24 @@ func init() {
 		where u_id=?;`)
 	check(err)
 
-	set_fmi, err = dbp.Prepare(
-		`insert into users (first_msg_id)
-		values (?);`)
+	// 下线时存储第一条离线消息id
+	store_fmi, err = dbp.Prepare(
+		`update users
+		set first_msg_id = ?,
+			has_set_fmi = 1
+		where has_set_fmi = 0 and u_id = ?;`)
 	check(err)
-	set_has_fmi, err = dbp.Prepare(
-		`insert into users (has_set_fmi)
-		values (?);`)
-	check(err)
-	get_has_fmi, err = dbp.Prepare(
-		`select has_set_fmi
-		from users
-		where u_id=?;`)
-	check(err)
+	// 上线时查询第一条离线消息id
 	get_fmi, err = dbp.Prepare(
 		`select first_msg_id
 		from users
-		where u_id=?;`)
+		where u_id = ? and has_set_fmi = 1;`)
+	check(err)
+	// 上线时修改has_set_fmi
+	set_has_fmi, err = dbp.Prepare(
+		`update users
+		set has_set_fmi = 0
+		where u_id = ? and has_set_fmi = 1;`)
 	check(err)
 
 	new_conv, err = dbp.Prepare(
